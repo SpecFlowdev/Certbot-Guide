@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Certbot TLS Guide</title>
+<style>
+:root{
+  --bg:#101112;
+  --bg-2:#141516;
+  --sidebar:#0d0e0f;
+  --panel:#181a1c;
+  --panel-2:#1d1f21;
+  --border:#292c2f;
+  --border-soft:#222528;
+  --text:#c8c9cb;
+  --text-dim:#777b80;
+  --text-bright:#e8e9ea;
+  --code-bg:#0b0c0d;
+  --code-text:#bfc1c4;
+  --accent:#8b8f94;
+  --accent-soft:#25282b;
+  --success:#334a38;
+  --success-text:#a8d2b0;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:#393d41;color:#fff}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#292d31;border-radius:8px}
+
+.layout{min-height:100vh}
+
+.sidebar{
+  position:fixed;
+  inset:0 auto 0 0;
+  width:270px;
+  padding:28px 18px 20px;
+  background:var(--sidebar);
+  border-right:1px solid var(--border-soft);
+  display:flex;
+  flex-direction:column;
+  z-index:20;
+}
+
+.brand{
+  padding:0 12px 28px;
+  border-bottom:1px solid var(--border-soft);
+}
+.brand-title{
+  color:var(--text-bright);
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:-.01em;
+}
+.brand-subtitle{
+  color:var(--text-dim);
+  font-size:11px;
+  margin-top:3px;
+}
+
+.nav-title{
+  color:#555a60;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  padding:25px 12px 9px;
+}
+
+.toc{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  margin:0;
+  padding:0;
+  border:0;
+  background:none;
+}
+
+.toc a{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:#777b80;
+  text-decoration:none;
+  font-size:12.5px;
+  padding:9px 11px;
+  border-radius:7px;
+  transition:background .15s,color .15s;
+}
+.toc a .nav-num{
+  color:#555a60;
+  width:18px;
+  font-size:11px;
+}
+.toc a:hover{color:var(--text-bright);background:#17191b}
+.toc a.active{
+  color:var(--text-bright);
+  background:#1b1e20;
+  box-shadow:inset 2px 0 0 #686d72;
+}
+.toc a.active .nav-num{color:#aeb2b6}
+
+.sidebar-bottom{
+  margin-top:auto;
+  padding:15px 12px 0;
+  border-top:1px solid var(--border-soft);
+}
+
+.lang-switch{
+  display:flex;
+  align-items:center;
+  gap:3px;
+  padding:3px;
+  background:#151719;
+  border:1px solid var(--border);
+  border-radius:7px;
+}
+.lang-btn{
+  flex:1;
+  border:0;
+  background:transparent;
+  color:#656a70;
+  font:600 10px inherit;
+  padding:6px 8px;
+  border-radius:5px;
+  cursor:pointer;
+  transition:.15s;
+}
+.lang-btn:hover{color:var(--text)}
+.lang-btn.active{background:#25282b;color:var(--text-bright)}
+
+.sidebar-credit{
+  color:#4e5358;
+  font-size:10px;
+  margin-top:12px;
+  line-height:1.5;
+}
+
+.main{
+  margin-left:270px;
+  min-width:0;
+}
+.wrap{
+  width:min(850px,100%);
+  margin:0 auto;
+  padding:70px 34px 100px;
+}
+
+.hero{margin-bottom:48px}
+h1{
+  margin:0 0 9px;
+  color:var(--text-bright);
+  font-size:32px;
+  line-height:1.2;
+  letter-spacing:-.035em;
+  font-weight:720;
+}
+.subtitle{
+  margin:0;
+  max-width:680px;
+  color:var(--text-dim);
+  font-size:13.5px;
+}
+
+h2{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  color:var(--text-bright);
+  font-size:18px;
+  font-weight:650;
+  margin:58px 0 15px;
+  padding:0 0 10px;
+  border-bottom:1px solid var(--border);
+  scroll-margin-top:30px;
+}
+h2 .num{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:26px;height:26px;
+  flex:0 0 26px;
+  color:#858a90;
+  background:#1b1d1f;
+  border:1px solid var(--border);
+  border-radius:6px;
+  font-size:11px;
+  font-weight:600;
+}
+
+p{font-size:14px;margin:10px 0;color:var(--text)}
+.note{
+  margin:16px 0;
+  padding:12px 15px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-left:2px solid #555a60;
+  border-radius:7px;
+  color:var(--text-dim);
+  font-size:13px;
+}
+.note b{color:var(--text)}
+.field{
+  display:inline-block;
+  padding:1px 6px;
+  border-radius:4px;
+  background:#1c1e20;
+  border:1px solid var(--border);
+  color:#c2a56e;
+  font:12px "SF Mono",Consolas,Monaco,monospace;
+}
+
+.code-block{
+  margin:16px 0;
+  overflow:hidden;
+  background:var(--code-bg);
+  border:1px solid var(--border);
+  border-radius:8px;
+}
+.code-block .label{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 10px 8px 13px;
+  background:#151718;
+  border-bottom:1px solid var(--border-soft);
+  color:#666b71;
+  font:10.5px "SF Mono",Consolas,Monaco,monospace;
+  letter-spacing:.02em;
+}
+.label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copy-btn{
+  flex:0 0 auto;
+  padding:4px 9px;
+  border:1px solid var(--border);
+  border-radius:5px;
+  background:#1b1d1f;
+  color:#777c81;
+  font:10.5px inherit;
+  cursor:pointer;
+  transition:.15s;
+}
+.copy-btn:hover{background:#272a2d;color:var(--text-bright)}
+.copy-btn.copied{background:var(--success);color:var(--success-text);border-color:#49634e}
+pre{
+  margin:0;
+  padding:15px;
+  overflow-x:auto;
+  color:var(--code-text);
+  font:12.3px/1.65 "SF Mono",Consolas,Monaco,monospace;
+  tab-size:2;
+}
+code{font-family:inherit}
+
+.footer{
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+  margin-top:75px;
+  padding-top:20px;
+  border-top:1px solid var(--border);
+  color:#555a60;
+  font-size:11px;
+}
+.top-link{
+  color:#666b70;
+  text-decoration:none;
+  transition:.15s;
+}
+.top-link:hover{color:var(--text-bright)}
+
+.copy-status{
+  position:fixed;
+  left:50%;
+  bottom:24px;
+  z-index:50;
+  padding:8px 12px;
+  background:#202326;
+  border:1px solid var(--border);
+  border-radius:7px;
+  color:var(--text-bright);
+  font-size:12px;
+  opacity:0;
+  transform:translate(-50%,12px);
+  pointer-events:none;
+  transition:.18s;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
+.copy-status.show{opacity:1;transform:translate(-50%,0)}
+
+.mobile-bar{display:none}
+
+@media(max-width:800px){
+  .sidebar{
+    width:220px;
+  }
+  .main{margin-left:220px}
+  .wrap{padding:52px 25px 80px}
+}
+
+@media(max-width:650px){
+  .sidebar{
+    position:fixed;
+    width:100%;
+    height:auto;
+    inset:0 0 auto 0;
+    padding:12px 14px;
+    border-right:0;
+    border-bottom:1px solid var(--border-soft);
+    display:block;
+  }
+  .brand{
+    padding:0;
+    border:0;
+  }
+  .brand-subtitle,.nav-title,.sidebar-bottom{display:none}
+  .brand-title{font-size:14px}
+  .toc{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    margin-top:10px;
+  }
+  .toc a{
+    padding:6px 8px;
+    font-size:11px;
+  }
+  .main{margin-left:0}
+  .wrap{padding:130px 16px 65px}
+  h1{font-size:27px}
+  h2{font-size:17px;margin-top:42px}
+  pre{font-size:11.5px}
+  .footer{flex-direction:column}
+}
+
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-title">Certbot TLS Guide</div>
+      <div class="brand-subtitle" data-i18n="brandSub">TLS setup guide</div>
+    </div>
+
+    <div class="nav-title" data-i18n="contents">Содержание</div>
+    <nav class="toc" aria-label="Navigation">
+      <a href="#step1" class="active"><span class="nav-num">01</span><span data-i18n="nav1">Подготовка и установка Certbot</span></a>
+      <a href="#step2"><span class="nav-num">02</span><span data-i18n="nav2">Получение сертификата</span></a>
+      <a href="#step3"><span class="nav-num">03</span><span data-i18n="nav3">Обновление сертификата</span></a>
+      <a href="#step4"><span class="nav-num">04</span><span data-i18n="nav4">Автоматическое обновление</span></a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="lang-switch" aria-label="Language">
+        <button class="lang-btn active" data-lang="ru">РУС</button>
+        <button class="lang-btn" data-lang="en">ENG</button>
+      </div>
+      <div class="sidebar-credit">Let's Encrypt · Docker · Certbot</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="wrap" id="top">
+      <header class="hero">
+        <h1>Certbot TLS Guide</h1>
+        <div class="subtitle" data-i18n="subtitle">Получение и автоматическое обновление TLS-сертификата Let's Encrypt через Docker Certbot</div>
+      </header>
+
+      <section>
+        <h2 id="step1"><span class="num">1</span><span data-i18n="h1">Подготовка и установка Certbot Certbot</span></h2>
+        <p data-i18n="p1">Создаём рабочую директорию и конфигурационный файл для контейнера Certbot:</p>
+        <div class="code-block">
+          <div class="label"><span>bash</span><button class="copy-btn" onclick="copyBlock(this)" data-copy-ru="Копировать" data-copy-en="Copy">Копировать</button></div>
+          <pre><code>mkdir -p /opt/certbot && cd /opt/certbot && nano docker-compose.yml</code></pre>
+        </div>
+        <p data-i18n="p2">Вставьте следующее содержимое:</p>
+        <div class="code-block">
+          <div class="label"><span>/opt/certbot/docker-compose.yml</span><button class="copy-btn" onclick="copyBlock(this)" data-copy-ru="Копировать" data-copy-en="Copy">Копировать</button></div>
+          <pre><code>services:
+  certbot:
+    container_name: certbot
+    image: certbot/certbot
+    network_mode: host
+    volumes:
+      - ./certs:/etc/letsencrypt</code></pre>
+        </div>
+      </section>
+
+      <section>
+        <h2 id="step2"><span class="num">2</span><span data-i18n="h2">Первичное получение сертификата</span></h2>
+        <div class="note" data-i18n="note1">Перед запуском убедитесь что порт <b>80</b> свободен. Certbot в режиме <span class="field">--standalone</span> поднимет временный сервер для проверки владения доменом.</div>
+        <p data-i18n="p3">Замените <span class="field">your-domain.com</span> и <span class="field">admin@your-domain.com</span> на ваши данные:</p>
+        <div class="code-block">
+          <div class="label"><span>bash</span><button class="copy-btn" onclick="copyBlock(this)" data-copy-ru="Копировать" data-copy-en="Copy">Копировать</button></div>
+          <pre><code>docker run --rm \
+  -v $(pwd)/certs:/etc/letsencrypt \
+  -v $(pwd)/var-lib-letsencrypt:/var/lib/letsencrypt \
+  --network host \
+  certbot/certbot certonly --standalone \
+  --non-interactive --agree-tos \
+  --email admin@your-domain.com \
+  -d your-domain.com</code></pre>
+        </div>
+      </section>
+
+      <section>
+        <h2 id="step3"><span class="num">3</span><span data-i18n="h3">Renew the certificate</span></h2>
+        <p data-i18n="p4">Run Certbot renewal. Certbot will check all managed certificates and renew only those that are due:</p>
+        <div class="code-block">
+          <div class="label"><span>bash</span><button class="copy-btn" onclick="copyBlock(this)" data-copy-ru="Копировать" data-copy-en="Copy">Копировать</button></div>
+          <pre><code>docker compose run --rm certbot renew</code></pre>
+        </div>
+        <div class="note" data-i18n="note3">A renewal does not happen on every run. Certbot renews a certificate only when it is close enough to expiration.</div>
+        <p data-i18n="p5">After the first successful issuance, you can safely run the renewal command periodically.</p>
+      </section>
+
+      <section>
+        <h2 id="step4"><span class="num">4</span><span data-i18n="h4">Автоматическое обновление (Cron)</span></h2>
+        <p data-i18n="p7">Сертификаты Let's Encrypt живут 90 дней. Настроим обновление раз в месяц (28-го числа).</p>
+        <p data-i18n="p8">Откройте планировщик:</p>
+        <div class="code-block">
+          <div class="label"><span>bash</span><button class="copy-btn" onclick="copyBlock(this)" data-copy-ru="Копировать" data-copy-en="Copy">Копировать</button></div>
+          <pre><code>crontab -e</code></pre>
+        </div>
+        <div class="note" data-i18n="note2">Выберите редактор (обычно <b>1</b> для nano).</div>
+        <p data-i18n="p9">Добавьте строку в конец файла:</p>
+        <div class="code-block">
+          <div class="label"><span>crontab</span><button class="copy-btn" onclick="copyBlock(this)" data-copy-ru="Копировать" data-copy-en="Copy">Копировать</button></div>
+          <pre><code>0 0 28 * * cd /opt/certbot && docker compose run --rm certbot renew</code></pre>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>Certbot TLS Guide · Let's Encrypt</span>
+        <a class="top-link" href="#top" data-i18n="top">Наверх ↑</a>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<div class="copy-status" id="copyStatus" role="status" aria-live="polite" data-i18n="copied">Скопировано</div>
+
+<script>
+const translations = {
+  ru:{
+    brandSub:"Инструкция по настройке TLS",
+    contents:"Содержание",
+    nav1:"Подготовка и установка Certbot",
+    nav2:"Получение сертификата",
+    nav3:"Обновление сертификата",
+    nav4:"Автоматическое обновление",
+    subtitle:"Получение и автоматическое обновление TLS-сертификата Let's Encrypt через Docker Certbot",
+    h1:"Подготовка и установка Certbot Certbot",
+    h2:"Первичное получение сертификата",
+    h3:"Обновление сертификата",
+    h4:"Автоматическое обновление (Cron)",
+    p1:"Создаём рабочую директорию и конфигурационный файл для контейнера Certbot:",
+    p2:"Вставьте следующее содержимое:",
+    note1:"Перед запуском убедитесь что порт <b>80</b> свободен. Certbot в режиме <span class=\"field\">--standalone</span> поднимет временный сервер для проверки владения доменом.",
+    p3:"Замените <span class=\"field\">your-domain.com</span> и <span class=\"field\">admin@your-domain.com</span> на ваши данные:",
+    p4:"Обновите сертификат с помощью Certbot:",
+    p5:"Добавьте строку с сертификатами в секцию volumes (режим <span class=\"field\">:ro</span> — только чтение):",
+    p6:"",
+    p7:"Сертификаты Let's Encrypt живут 90 дней. Настроим обновление раз в месяц (28-го числа).",
+    p8:"Откройте планировщик:",
+    
+    p9:"Добавьте строку в конец файла:",
+    top:"Наверх ↑",
+    copied:"Скопировано"
+  },
+  en:{
+    brandSub:"TLS setup guide",
+    contents:"Contents",
+    nav1:"Preparation & installation",
+    nav2:"Initial certificate",
+    nav3:"Renewal",
+    nav4:"Automatic renewal",
+    subtitle:"Obtain and automatically renew a Let's Encrypt TLS certificate with Docker Certbot",
+    h1:"Preparation & installation",
+    h2:"Initial certificate",
+    h3:"Renew the certificate",
+    h4:"Automatic renewal (Cron)",
+    p1:"Create a working directory and the Certbot container configuration file:",
+    p2:"Paste the following content:",
+    note1:"Before starting, make sure port <b>80</b> is free. Certbot in <span class=\"field\">--standalone</span> mode starts a temporary server to verify domain ownership.",
+    p3:"Replace <span class=\"field\">your-domain.com</span> and <span class=\"field\">admin@your-domain.com</span> with your values:",
+    p4:"Renew the certificate using Certbot:",
+    p5:"Add the certificate mount to the volumes section (<span class=\"field\">:ro</span> means read-only):",
+    p6:"",
+    p7:"Let's Encrypt certificates are valid for 90 days. Configure a monthly renewal (on the 28th).",
+    p8:"Open the scheduler:",
+    
+    p9:"Add the following line at the end of the file:",
+    top:"Back to top ↑",
+    copied:"Copied"
+  }
+};
+
+function setLanguage(lang){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const key = el.dataset.i18n;
+    if(translations[lang][key] !== undefined) el.innerHTML = translations[lang][key];
+  });
+  document.querySelectorAll(".copy-btn").forEach(btn=>{
+    btn.textContent = btn.dataset["copy"+(lang==="ru"?"Ru":"En")];
+  });
+  document.querySelectorAll(".lang-btn").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.lang===lang);
+  });
+  localStorage.setItem("certbot-lang",lang);
+}
+
+document.querySelectorAll(".lang-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>setLanguage(btn.dataset.lang));
+});
+
+async function copyText(text){
+  if(navigator.clipboard && window.isSecureContext){
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const area=document.createElement("textarea");
+  area.value=text;
+  area.style.position="fixed";
+  area.style.opacity="0";
+  document.body.appendChild(area);
+  area.select();
+  document.execCommand("copy");
+  area.remove();
+}
+
+async function copyBlock(btn){
+  const code=btn.closest(".code-block").querySelector("code");
+  try{
+    await copyText(code.innerText.replace(/\n$/,""));
+    const old=btn.textContent;
+    btn.textContent="✓";
+    btn.classList.add("copied");
+    const status=document.getElementById("copyStatus");
+    status.classList.add("show");
+    setTimeout(()=>status.classList.remove("show"),1300);
+    setTimeout(()=>{btn.textContent=old;btn.classList.remove("copied")},1300);
+  }catch(e){}
+}
+
+const sections=[...document.querySelectorAll("h2[id]")];
+const links=[...document.querySelectorAll(".toc a")];
+const observer=new IntersectionObserver(entries=>{
+  const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>a.boundingClientRect.top-b.boundingClientRect.top)[0];
+  if(!visible)return;
+  links.forEach(link=>link.classList.toggle("active",link.getAttribute("href")==="#"+visible.target.id));
+},{rootMargin:"-18% 0px -65% 0px",threshold:0});
+sections.forEach(s=>observer.observe(s));
+
+const saved=localStorage.getItem("certbot-lang");
+setLanguage(saved==="en"?"en":"ru");
+</script>
+</body>
+</html>
